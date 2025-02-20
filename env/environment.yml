@@ -1,6 +1,6 @@
 name: icn
 channels:
-- defaults
+- nodefaults
 - conda-forge
 dependencies:
 - python>=3.5
@@ -8,7 +8,6 @@ dependencies:
 - mkl
 - numpy
 - scipy
-- sys
 - matplotlib
 - numba
 - pyqt>=5.9
@@ -49,6 +48,6 @@ dependencies:
   - neo
   - pybv
   - bids
-  - sklearn
   - cvxpy
   - pyrem
+  - pyedflib
