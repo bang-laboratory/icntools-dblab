@@ -5,10 +5,10 @@ import shutil
 
 import dateutil
 import icn.icn_ephys as ephys
-from icn.icn_tb import icn_tb as tb
 import mne
 import numpy as np
 import pandas as pd
+from icn.icn_tb import icn_tb as tb
 from matplotlib import pyplot as plt
 from mne_bids import BIDSPath, write_raw_bids
 
@@ -231,7 +231,7 @@ def import_LfpMontageTimeDomain(filename):
             raw_data.values.transpose() / 100000,
             list(raw_data.keys()),
             sfreq=sfreq,
-            ch_types="seeg",
+            ch_types="dbs",
             meas_date=(meas_date.timestamp(), 0),
         )
         return raw
@@ -273,45 +273,46 @@ def import_BrainSenseTimeDomain(filename):
         ne = 0
         tadd = 0
         times = []
-        for nbs, bs in enumerate(data["BrainSenseLfp"]):
-            rp = bs["TherapySnapshot"]["Right"]
-            lp = bs["TherapySnapshot"]["Left"]
-            rsp = (
-                str(rp["PulseWidthInMicroSecond"])
-                + "_us_"
-                + str(rp["RateInHertz"])
-                + "_Hz"
-            )
-            lsp = (
-                str(lp["PulseWidthInMicroSecond"])
-                + "_us_"
-                + str(lp["RateInHertz"])
-                + "_Hz"
-            )
-            for n, events in enumerate(bs["LfpData"]):
-                if n == 0 and nbs > 0:
-                    tadd = onset[-1] + duration[-1]
-                if n == 0:
-                    first_onset = bs["LfpData"][0]["TicksInMs"]
-                    stim_duration = (bs["LfpData"][1]["TicksInMs"] - first_onset) / 1000
-                ne += 1
-                rss = (
-                    str(events["Right"]["LFP"])
-                    + "_mV_"
-                    + str(events["Right"]["mA"])
-                    + "_mA"
-                )
-                lss = (
-                    str(events["Left"]["LFP"])
-                    + "_mV_"
-                    + str(events["Left"]["mA"])
-                    + "_mA"
-                )
-                desc = "R_" + rss + "_" + rsp + "_L_" + lss + "_" + lsp
-                description.append(desc)
-                duration.append(stim_duration)
-                times.append(events["TicksInMs"])
-                onset.append(tadd + (events["TicksInMs"] - first_onset) / 1000)
+        # for annotations
+        # for nbs, bs in enumerate(data["BrainSenseLfp"]):
+        #     rp = bs["TherapySnapshot"]["Right"]
+        #     lp = bs["TherapySnapshot"]["Left"]
+        #     rsp = (
+        #         str(rp["PulseWidthInMicroSecond"])
+        #         + "_us_"
+        #         + str(rp["RateInHertz"])
+        #         + "_Hz"
+        #     )
+        #     lsp = (
+        #         str(lp["PulseWidthInMicroSecond"])
+        #         + "_us_"
+        #         + str(lp["RateInHertz"])
+        #         + "_Hz"
+        #     )
+        #     for n, events in enumerate(bs["LfpData"]):
+        #         if n == 0 and nbs > 0:
+        #             tadd = onset[-1] + duration[-1]
+        #         if n == 0:
+        #             first_onset = bs["LfpData"][0]["TicksInMs"]
+        #             stim_duration = (bs["LfpData"][1]["TicksInMs"] - first_onset) / 1000
+        #         ne += 1
+        #         rss = (
+        #             str(events["Right"]["LFP"])
+        #             + "_mV_"
+        #             + str(events["Right"]["mA"])
+        #             + "_mA"
+        #         )
+        #         lss = (
+        #             str(events["Left"]["LFP"])
+        #             + "_mV_"
+        #             + str(events["Left"]["mA"])
+        #             + "_mA"
+        #         )
+        #         desc = "R_" + rss + "_" + rsp + "_L_" + lss + "_" + lsp
+        #         description.append(desc)
+        #         duration.append(stim_duration)
+        #         times.append(events["TicksInMs"])
+        #         onset.append(tadd + (events["TicksInMs"] - first_onset) / 1000)
 
         meas_date = dateutil.parser.parse(
             data["BrainSenseTimeDomain"][0]["FirstPacketDateTime"]
@@ -322,7 +323,7 @@ def import_BrainSenseTimeDomain(filename):
             raw_data.values.transpose() / 100000,
             list(raw_data.keys()),
             sfreq=sfreq,
-            ch_types="seeg",
+            ch_types="dbs",
             meas_date=(meas_date.timestamp(), 0),
         )
         # raw.set_annotations(mne.Annotations(onset,duration,description,None)) bug
@@ -458,7 +459,11 @@ def plot_LFPMontage_spectra(filename):
                 linewidth=0.5,
                 linestyle=linestyle[artefact],
             )
-            plt.scatter(lfp["PeakFrequencyInHertz"], lfp["PeakMagnitudeInMicroVolt"])
+
+            if "PeakFrequencyInHertz" in lfp:
+                plt.scatter(
+                    lfp["PeakFrequencyInHertz"], lfp["PeakMagnitudeInMicroVolt"]
+                )
             spectra[chans[a]] = lfp["LFPMagnitude"]
         spectra.loc[:, left_chans].mean(axis=1).plot(linewidth=3, color="k")
         plt.xlabel("Frequency [Hz]")
@@ -595,98 +600,83 @@ def plot_wavelet_spectra(filename, typefield="all"):
 
 
 def LfpMontageTimeDomain_to_bids(
-    filename, subject, bids_folder="/bids", task="LfpMontageTimeDomain"
+    filename: str, bpath: BIDSPath, task="LfpMontageTimeDomain"
 ):
-    data = read_file(filename)
-    opath, fname, ext = tb.fileparts(filename)
-    if subject.find("-") > 0:
-        subject = subject[subject.find("-") + 1 :]
-    session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
-    sourcename = BIDSPath(subject=subject, session=session)
-    basename = str(BIDSPath(subject=subject, task=task, session=session))
-    bpath = BIDSPath(subject=subject, session=session).mkdir()
-    print(bids_folder)
-    print(bpath)
-    print(basename)
+    # data = read_file(filename)
+    # opath, fname, ext = tb.fileparts(filename)
+    # if subject.find("-") > 0:
+    #     subject = subject[subject.find("-") + 1 :]
+    # session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
+    # sourcename = BIDSPath(subject=subject, session=session)
+    # basename = BIDSPath(subject=subject, task=task, session=session)
+    # bpath = BIDSPath(subject=subject, session=session).mkdir()
+    sourcedata = bpath.directory / "sourcedata"
+    figure_path = sourcedata / "figures"
+
+    # print(bids_folder)
+    # print(bpath)
+    # print(basename)
     raw = import_LfpMontageTimeDomain(filename)
     if raw is not None:
         rfig = raw.plot(color="k")
-        tb.mkdir(pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", "figures"))
-        rfig.savefig(
-            pathlib.Path(
-                bids_folder, bpath, "eeg", "sourcedata", "figures", basename + ".png"
-            )
-        )
-
+        tb.mkdir(figure_path)
+        rfig.savefig(figure_path / (bpath.basename + ".png"))
         if os.path.exists("tmp.edf"):
             os.remove("tmp.edf")
         ephys.mne_write_edf(raw, "tmp.edf")
-        raw = mne.io.read_raw_edf("tmp.edf")
-        ephys.write_raw_bids(
-            raw, bids_basename=basename, output_path=bids_folder, overwrite=True
-        )
-        shutil.copyfile(
-            filename,
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-        )
-        plot_wavelet_spectra(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            typefield=task,
-        )
-        plot_LFPMontage_spectra(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext)
-        )
+        raw = mne.io.read_raw_edf("tmp.edf", infer_types=True)
+        ephys.write_raw_bids(raw, bpath, overwrite=True)
+        # shutil.copyfile(
+        #     filename,
+        #     pathlib.Path(
+        #         bids_folder, bpath, "eeg", "sourcedata", basename.basename + ext
+        #     ),
+        # )
+        plot_wavelet_spectra(filename, typefield=task)
+        plot_LFPMontage_spectra(filename)
         os.remove("tmp.edf")
-        shutil.move(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", sourcename + ext),
-        )
+        # shutil.move(
+        #     pathlib.Path(
+        #         bids_folder, bpath, "eeg", "sourcedata", basename.basename + ext
+        #     ),
+        #     pathlib.Path(
+        #         bids_folder, bpath, "eeg", "sourcedata", sourcename.basename + ext
+        #     ),
+        # )
 
 
-def BrainSenseTimeDomain_to_bids(
-    filename, subject, bids_folder="/bids", task="BrainSenseTimeDomain"
-):
-    data = read_file(filename)
-    opath, fname, ext = tb.fileparts(filename)
-    if subject.find("-") > 0:
-        subject = subject[subject.find("-") + 1 :]
-    session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
-    basename = BIDSPath(subject=subject, task=task, session=session)
-    bpath = BIDSPath(subject=subject, session=session)  # .mkdir()
-    sourcename = BIDSPath(subject=subject, session=session)
+def BrainSenseTimeDomain_to_bids(filename, bpath, task="BrainSenseTimeDomain"):
+    # data = read_file(filename)
+    # opath, fname, ext = tb.fileparts(filename)
+    # if subject.find("-") > 0:
+    #     subject = subject[subject.find("-") + 1 :]
+    # session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
+    # basename = BIDSPath(subject=subject, task=task, session=session)
+    # bpath = BIDSPath(subject=subject, session=session)  # .mkdir()
+    # sourcename = BIDSPath(subject=subject, session=session)
+    sourcedata = bpath.directory / "sourcedata"
+    figure_path = sourcedata / "figures"
+    tb.mkdir(figure_path)
     raw = import_BrainSenseTimeDomain(filename)
     if raw is not None:
         rfig = raw.plot(color="k")
-        rfig.savefig(
-            pathlib.Path(
-                bids_folder, bpath, "eeg", "sourcedata", "figures", basename + ".png"
-            )
-        )
+        rfig.savefig(figure_path / (bpath.basename + ".png"))
         if os.path.exists("tmp.edf"):
             os.remove("tmp.edf")
         ephys.mne_write_edf(raw, "tmp.edf")
-        raw = mne.io.read_raw_edf("tmp.edf")
-        write_raw_bids(
-            raw, bids_basename=basename, output_path=bids_folder, overwrite=True
-        )
-        if not os.path.isdir(pathlib.Path(bids_folder, bpath, "eeg", "sourcedata")):
-            os.makedirs(pathlib.Path(bids_folder, bpath, "eeg", "sourcedata"))
-        shutil.copyfile(
-            filename,
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-        )
-        plot_wavelet_spectra(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            typefield=task,
-        )
-        plot_BrainSenseLfp(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext)
-        )
+        raw = mne.io.read_raw_edf("tmp.edf", infer_types=True)
+        write_raw_bids(raw, bpath, overwrite=True)
+        # shutil.copyfile(
+        #     filename,
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
+        # )
+        plot_wavelet_spectra(filename, typefield=task)
+        plot_BrainSenseLfp(filename)
         os.remove("tmp.edf")
-        shutil.move(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", sourcename + ext),
-        )
+        # shutil.move(
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", sourcename + ext),
+        # )
 
 
 def IndefiniteStreaming_to_bids(
@@ -738,17 +728,22 @@ def convert_to_bids(filename, subject, bids_folder):
     subject = subject.replace("sub-", "")
     data = read_file(filename)
     session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
-    bpath = pathlib.Path(
-        bids_folder, BIDSPath(subject=subject, session=session).mkdir()
-    )
     print("bpath", type(bpath), bpath)
-    sourcename = BIDSPath(subject=subject, session=session).mkdir()
-    sourcefolder = pathlib.Path(bids_folder, bpath, "eeg", "sourcedata")
     print("sourcename", type(sourcename), sourcename)
-    tb.mkdir(sourcefolder)
-    shutil.copyfile(filename, pathlib.Path(str(sourcename) + ".json"))
-    plot_LfpFrequencySnapshotEvents(pathlib.Path(str(sourcename) + ".json"))
-    LfpMontageTimeDomain_to_bids(filename, subject, bids_folder)
-    BrainSenseTimeDomain_to_bids(filename, subject, bids_folder)
+
+    bpath = BIDSPath(
+        subject=subject,
+        session=session,
+        root=bids_folder,
+        task="artifacttest",
+        datatype="ieeg",
+    ).mkdir()
+    sourcedata = bpath.directory / "sourcedata"
+    sourcedata.mkdir(parents=True, exist_ok=True)
+    new_filename = sourcedata / (str(bpath.basename) + ".json")
+    shutil.copyfile(filename, new_filename)
+    plot_LfpFrequencySnapshotEvents(new_filename)
+    LfpMontageTimeDomain_to_bids(new_filename, bpath)
+    BrainSenseTimeDomain_to_bids(new_filename, bpath)
     IndefiniteStreaming_to_bids(filename, subject, bids_folder)
     plt.close("all")
