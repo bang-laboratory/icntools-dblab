@@ -4,15 +4,18 @@ import pathlib
 import shutil
 
 import dateutil
-import icn.icn_ephys as ephys
 import mne
 import numpy as np
 import pandas as pd
-from icn.icn_tb import icn_tb as tb
+from functools import cache
 from matplotlib import pyplot as plt
 from mne_bids import BIDSPath, write_raw_bids
 
+from icn.icn_tb import icn_tb as tb
+import icn.icn_ephys as ephys
 
+
+@cache
 def read_file(filename):
     return pd.read_json(filename, typ="Series", convert_dates=False)
 
@@ -361,7 +364,7 @@ def import_IndefiniteStreaming(filename):
             raw_data.values.transpose() / 100000,
             list(raw_data.keys()),
             sfreq=sfreq,
-            ch_types="seeg",
+            ch_types="dbs",
             meas_date=(meas_date.timestamp(), 0),
         )
         return raw
@@ -610,6 +613,7 @@ def LfpMontageTimeDomain_to_bids(
     # sourcename = BIDSPath(subject=subject, session=session)
     # basename = BIDSPath(subject=subject, task=task, session=session)
     # bpath = BIDSPath(subject=subject, session=session).mkdir()
+    bpath.update(task=task)
     sourcedata = bpath.directory / "sourcedata"
     figure_path = sourcedata / "figures"
 
@@ -654,6 +658,7 @@ def BrainSenseTimeDomain_to_bids(filename, bpath, task="BrainSenseTimeDomain"):
     # basename = BIDSPath(subject=subject, task=task, session=session)
     # bpath = BIDSPath(subject=subject, session=session)  # .mkdir()
     # sourcename = BIDSPath(subject=subject, session=session)
+    bpath.update(task=task)
     sourcedata = bpath.directory / "sourcedata"
     figure_path = sourcedata / "figures"
     tb.mkdir(figure_path)
@@ -679,49 +684,39 @@ def BrainSenseTimeDomain_to_bids(filename, bpath, task="BrainSenseTimeDomain"):
         # )
 
 
-def IndefiniteStreaming_to_bids(
-    filename, subject, bids_folder="/bids", task="IndefiniteStreaming"
-):
-    data = read_file(filename)
-    opath, fname, ext = tb.fileparts(filename)
-    if subject.find("-") > 0:
-        subject = subject[subject.find("-") + 1 :]
-    session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
-    basename = BIDSPath(subject=subject, task=task, session=session)
-    bpath = BIDSPath(subject=subject, session=session)  # .mkdir()
-    sourcename = BIDSPath(subject=subject, session=session)
+def IndefiniteStreaming_to_bids(filename, bpath, task="IndefiniteStreaming"):
+    # data = read_file(filename)
+    # opath, fname, ext = tb.fileparts(filename)
+    # if subject.find("-") > 0:
+    #     subject = subject[subject.find("-") + 1 :]
+    # session = data["SessionDate"][:-1].replace("-", "").replace(":", "")
+    # basename = BIDSPath(subject=subject, task=task, session=session)
+    # bpath = BIDSPath(subject=subject, session=session)  # .mkdir()
+    # sourcename = BIDSPath(subject=subject, session=session)
+    bpath.update(task=task)
+    sourcedata = bpath.directory / "sourcedata"
+    figure_path = sourcedata / "figures"
+    tb.mkdir(figure_path)
     raw = import_IndefiniteStreaming(filename)
     if raw is not None:
         rfig = raw.plot(color="k")
-        rfig.savefig(
-            pathlib.Path(
-                bids_folder, bpath, "eeg", "sourcedata", "figures", basename + ".png"
-            )
-        )
+        rfig.savefig(figure_path / (bpath.basename + ".png"))
 
         if os.path.exists("tmp.edf"):
             os.remove("tmp.edf")
 
         ephys.mne_write_edf(raw, "tmp.edf")
-        raw = mne.io.read_raw_edf("tmp.edf")
-        write_raw_bids(
-            raw, bids_basename=basename, output_path=bids_folder, overwrite=True
-        )
-        if not os.path.isdir(pathlib.Path(bids_folder, bpath, "eeg", "sourcedata")):
-            os.makedirs(pathlib.Path(bids_folder, bpath, "eeg", "sourcedata"))
-        shutil.copyfile(
-            filename,
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-        )
-        plot_wavelet_spectra(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            typefield=task,
-        )
+        raw = mne.io.read_raw_edf("tmp.edf", infer_types=True)
+        write_raw_bids(raw, bpath, overwrite=True)
+        # plot_wavelet_spectra(
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
+        #     typefield=task,
+        # )
         os.remove("tmp.edf")
-        shutil.move(
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
-            pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", sourcename + ext),
-        )
+        # shutil.move(
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", basename + ext),
+        #     pathlib.Path(bids_folder, bpath, "eeg", "sourcedata", sourcename + ext),
+        # )
 
 
 def convert_to_bids(filename, subject, bids_folder):
@@ -735,7 +730,7 @@ def convert_to_bids(filename, subject, bids_folder):
         subject=subject,
         session=session,
         root=bids_folder,
-        task="artifacttest",
+        # task="artifacttest",
         datatype="ieeg",
     ).mkdir()
     sourcedata = bpath.directory / "sourcedata"
@@ -745,5 +740,5 @@ def convert_to_bids(filename, subject, bids_folder):
     plot_LfpFrequencySnapshotEvents(new_filename)
     LfpMontageTimeDomain_to_bids(new_filename, bpath)
     BrainSenseTimeDomain_to_bids(new_filename, bpath)
-    IndefiniteStreaming_to_bids(filename, subject, bids_folder)
+    IndefiniteStreaming_to_bids(new_filename, bpath)
     plt.close("all")
