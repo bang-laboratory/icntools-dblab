@@ -14,3 +14,7 @@ icn_tb - conglomerate of utility functions
  
 This is version -0.0001
 
+# Fork
+Forked by Malte Lau Petersen, working 
+- updated to support latest versions of mne-bids
+- started slight refactor to work as an importable python module
