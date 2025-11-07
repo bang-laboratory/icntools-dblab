@@ -1,0 +1,14 @@
+[project]
+name = "icn"
+version = "0.1.0"
+description = "Fork of icn-tools with updated dependencies and package-i-fied metadata"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.3.3",
+    "scikit-image>=0.25.2",
+    "scikit-learn>=1.7.2",
+    "statsmodels>=0.14.5",
+]
+
+packages = ["icn_tb", "icn_m1", "icn_bids", "icn_stats", "icn_plots", "icn_onset", "icn_ephys", "icn_ripple", "icn_perceive"]
