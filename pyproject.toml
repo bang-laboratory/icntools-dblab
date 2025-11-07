@@ -11,4 +11,7 @@ dependencies = [
     "statsmodels>=0.14.5",
 ]
 
-packages = ["icn_tb", "icn_m1", "icn_bids", "icn_stats", "icn_plots", "icn_onset", "icn_ephys", "icn_ripple", "icn_perceive"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["icn*"]
