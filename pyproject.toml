@@ -11,7 +11,9 @@ dependencies = [
     "statsmodels",
     "numpy <2.1",
     "six",
-    "requests"
+    "requests",
+    "mne",
+    "mne_bids",
 ]
 
 
