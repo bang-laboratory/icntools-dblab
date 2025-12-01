@@ -6,10 +6,11 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pandas <1.5",
+    "numpy <2.1",
+    "contourpy <1.3.3",
     "scikit-image",
     "scikit-learn",
     "statsmodels",
-    "numpy <2.1",
     "six",
     "requests",
     "mne",
