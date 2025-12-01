@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "pandas",
-    "scikit-image>=0.25.2",
-    "scikit-learn>=1.7.2",
-    "statsmodels>=0.14.5",
+    "scikit-image",
+    "scikit-learn",
+    "statsmodels",
     "numpy >=2.0,<2.1",
     "six",
     "requests"
