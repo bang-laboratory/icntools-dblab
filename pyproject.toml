@@ -5,11 +5,11 @@ description = "Fork of icn-tools with updated dependencies and package-i-fied me
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "pandas",
+    "pandas <1.5",
     "scikit-image",
     "scikit-learn",
     "statsmodels",
-    "numpy >=2.0,<2.1",
+    "numpy <2.1",
     "six",
     "requests"
 ]
