@@ -13,7 +13,7 @@ from matplotlib import pyplot as plt
 from mne_bids import BIDSPath, write_raw_bids
 
 from icn.icn_tb import icn_tb as tb
-import icn.icn_ephys as ephys
+from icn.icn_ephys import icn_ephys as ephys
 
 
 @cache
