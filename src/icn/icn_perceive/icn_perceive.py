@@ -267,7 +267,6 @@ def import_BrainSenseTimeDomain(filename):
             print(f"{uchans=}")
             print(f"{n=}, {ch=}")
             print(f"{i=}")
-            print(f"{cdata=}")
             if n == 0:
                 ticks = np.double(
                     data["BrainSenseTimeDomain"][i[0]]["TicksInMses"][:-1].split(",")
