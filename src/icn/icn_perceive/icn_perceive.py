@@ -615,6 +615,7 @@ def plot_wavelet_spectra(filename, typefield="all"):
 def LfpMontageTimeDomain_to_bids(
     filename: str, bpath: BIDSPath, task="LfpMontageTimeDomain"
 ):
+    # TODO: dont crash if you dont find the data
     print("LfpMontageTimeDomain_to_bids:", filename, bpath)
     # data = read_file(filename)
     # opath, fname, ext = tb.fileparts(filename)
@@ -758,10 +759,10 @@ def convert_to_bids(filename, subject, bids_folder):
     new_filename = sourcedata / (str(bpath.basename) + ".json")
     shutil.copyfile(filename, new_filename)
     plot_LfpFrequencySnapshotEvents(new_filename)
-    raw1 = LfpMontageTimeDomain_to_bids(new_filename, bpath)
+    # raw1 = LfpMontageTimeDomain_to_bids(new_filename, bpath)
     raw2 = BrainSenseTimeDomain_to_bids(new_filename, bpath)
-    raw3 = IndefiniteStreaming_to_bids(new_filename, bpath)
+    # raw3 = IndefiniteStreaming_to_bids(new_filename, bpath)
     # plt.close("all")
-    # return raw2
+    return raw2
     # return (None, raw2, None)
-    return (raw1, raw2, raw3)
+    # return (raw1, raw2, raw3)
