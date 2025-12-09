@@ -17,6 +17,7 @@ dependencies = [
     "mne_bids",
     "psutil",
     "mne",
+    "pyedflib",
 ]
 
 

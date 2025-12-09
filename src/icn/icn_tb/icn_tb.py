@@ -8,19 +8,18 @@ import psutil
 from matplotlib import pyplot as plt
 
 
-
 def list_files(startpath):
     for root, dirs, files in os.walk(startpath):
-        level = root.replace(startpath, '').count(os.sep)
-        indent = ' ' * 4 * (level)
-        print('{}{}/'.format(indent, os.path.basename(root)))
-        subindent = ' ' * 4 * (level + 1)
+        level = root.replace(startpath, "").count(os.sep)
+        indent = " " * 4 * (level)
+        print("{}{}/".format(indent, os.path.basename(root)))
+        subindent = " " * 4 * (level + 1)
         for f in files:
-            print('{}{}'.format(subindent, f))
-            
+            print("{}{}".format(subindent, f))
+
 
 def ci(srchlist, strlist):
-    if isinstance(srchlist, type('a')):
+    if isinstance(srchlist, type("a")) or isinstance(srchlist, np.str_):
         srchlist = [srchlist]
     i = list()
     for a in srchlist:
@@ -32,7 +31,7 @@ def n_jobs():
     return int(psutil.cpu_count() - 1)
 
 
-def fileparts(filename, append='', dropletters=None):
+def fileparts(filename, append="", dropletters=None):
     fdir, fname = os.path.split(str(pathlib.Path(filename)))
     fname, ext = os.path.splitext(fname)
     if not append:
@@ -43,21 +42,21 @@ def fileparts(filename, append='', dropletters=None):
         return str(pathlib.Path(fdir, fname + append))
 
 
-def ffind(folder='.', string='*.*'):
+def ffind(folder=".", string="*.*"):
     files = []
     for cdir, _, _ in os.walk(folder):
         files.extend(glob(os.path.join(cdir, string)))
     return files
 
 
-def replace_txt_in_file(filename,searchstring,replacestring=''):
-        with fileinput.FileInput(filename, inplace=True, backup='.bak') as file:
-            for line in file:
-                print(line.replace(searchstring,replacestring), end='')
+def replace_txt_in_file(filename, searchstring, replacestring=""):
+    with fileinput.FileInput(filename, inplace=True, backup=".bak") as file:
+        for line in file:
+            print(line.replace(searchstring, replacestring), end="")
 
 
 def json_write(filename, data):
-    with open(pathlib.Path(filename).as_posix(), 'w') as json_file:
+    with open(pathlib.Path(filename).as_posix(), "w") as json_file:
         json.dumps(data, indent=4)
         json.dump(data, json_file, indent=4)
 
@@ -91,7 +90,7 @@ def status_check(filename, status=None, compare=None):
 
     if pathlib.Path.is_file(filename):
         state = json_read(filename)
-        if isinstance(status, type('a')):
+        if isinstance(status, type("a")):
             status = [status]
         if len(status) >= 2:
             for a in status:
@@ -101,7 +100,7 @@ def status_check(filename, status=None, compare=None):
         else:
             return state
     else:
-        print('not a file')
+        print("not a file")
         return False
 
 
