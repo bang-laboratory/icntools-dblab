@@ -264,6 +264,10 @@ def import_BrainSenseTimeDomain(filename):
         for n, ch in enumerate(uchans):
             i = tb.ci(ch, chans)
             cdata = data["BrainSenseTimeDomain"][i[0]]["TimeDomainData"]
+            print(f"{uchans=}")
+            print(f"{n=}, {ch=}")
+            print(f"{i=}")
+            print(f"{cdata=}")
             if n == 0:
                 ticks = np.double(
                     data["BrainSenseTimeDomain"][i[0]]["TicksInMses"][:-1].split(",")

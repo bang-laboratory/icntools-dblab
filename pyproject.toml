@@ -16,6 +16,7 @@ dependencies = [
     "mne",
     "mne_bids",
     "psutil",
+    "mne",
 ]
 
 
